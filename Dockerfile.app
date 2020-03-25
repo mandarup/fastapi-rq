@@ -1,0 +1,26 @@
+# base image - Alpine Linux - these need 
+#FROM python:3.8.0-alpine
+#FROM tiangolo/uvicorn-gunicorn:python3.8-alpine3.10
+FROM python:3
+
+
+# set working directory
+#RUN mkdir -p /usr/src
+WORKDIR /usr/src
+# -- copy project
+#COPY . /usr/src
+
+# add requirements (to leverage Docker cache)
+ADD ./requirements.app.txt /usr/src/requirements.txt
+
+# RUN apk add bash gcc musl-dev linux-headers make redis alpine-sdk
+
+RUN pip install -r requirements.txt
+
+
+
+
+
+
+
+EXPOSE 8000

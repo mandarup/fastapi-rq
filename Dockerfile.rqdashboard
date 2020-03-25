@@ -1,0 +1,12 @@
+FROM python:3.8.0-alpine
+#FROM python:3
+
+RUN pip install rq-dashboard
+
+EXPOSE 9181
+
+RUN apk add bash
+
+# -- This is taken care of in docker-compose
+#CMD ["rq-dashboard -H redis"]
+#ENTRYPOINT ["/bin/bash", "-c", "rq-dashboard -H redis --config /usr/src/workers/settings.py"]

@@ -1,0 +1,67 @@
+version: "3.7"
+services:
+    app:
+        build:
+          dockerfile: Dockerfile.app
+          context: .
+        image: app
+        container_name: app
+        ports:
+            - '8000:8000'
+        expose:
+            - '8000'
+        command: 
+            # -- host has to be explicitly set to '0.0.0.0', else it 
+            # -- gives connection reset error
+            uvicorn app.main:app --reload --port '8000' --host '0.0.0.0'
+        volumes:
+            - .:/usr/src:rw
+            # - ./data:/data  # for sharing databases
+            #- $HOME/.databrickscfg:/usr/src/.databrickscfg
+        depends_on:
+            - redis
+            - workers
+    redis:
+        image: redis:latest
+        expose:
+            - "6379"
+        ports:
+            - '6379:6379'
+        # enable fully-durable alternative to snapshotting
+        volumes:
+           - ./redis.conf:/usr/local/etc/redis/redis.conf
+           - ./data:/data:rw
+        command: ["sh", "-c", "redis-server --include /usr/local/etc/redis/redis.conf --port 6379"]
+    workers:
+        image: workers
+        build:
+            context: .
+            dockerfile: Dockerfile.workers
+        volumes:
+            # - ./supervisord.conf:/usr/src/supervisord.conf
+            # - ./redis_settings.py:/usr/src/redis_settings.py
+            - .:/usr/src:rw
+            # - $HOME/.databrickscfg:/usr/src/.databrickscfg:ro
+            # - ./data:/data
+        command: ["/bin/bash", "-c", "supervisord -c /usr/src/supervisord.conf -n"]
+        links:
+            - redis
+        depends_on:
+            - redis
+    rq-dashboard:
+        image: rq-dashboard
+        build:
+            context: .
+            dockerfile: Dockerfile.rqdashboard
+        #volumes:
+        #    - ./workers/settings.py:/settings.py
+        command: ["/bin/bash", "-c", "rq-dashboard -H redis --redis-port 6379"] # --config settings
+        ports:
+            - '9181:9181'
+        expose:
+            - "9181"
+        links:
+            - redis
+        depends_on:
+            - redis
+            - workers
